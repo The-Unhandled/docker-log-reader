@@ -1,16 +1,19 @@
 package forsaken.dockerlogreader
 
 import forsaken.dockerlogreader.docker.DockerCommands
-import forsaken.dockerlogreader.log.LogParser
-import zio._
-import zio.stream._
-import cats.implicits._
+import forsaken.dockerlogreader.log.{Log, LogParser}
+import zio.*
+import zio.stream.*
+import cats.implicits.*
 
 object App extends ZIOAppDefault with DockerCommands:
 
   def run: ZIO[Any, Throwable, Unit] =
     // Replace with your actual container ID or name
     val containerName = "trader_abci_0"
+
+    val logSink: ZSink[Any, Throwable, Log, Nothing, Unit] =
+      ZSink.foreach(log => Console.printLine(log.show))
 
     // Fetch and print the logs
     for
@@ -21,17 +24,13 @@ object App extends ZIOAppDefault with DockerCommands:
       _ <- Console.printLine("Getting logs from Container ID: " + containerId)
       logParser = LogParser()
       fiber <- logs(containerId).linesStream
-        .map(logParser.parse)                                 // Parse each log line
-        .map(ZIO.fromOption)                                  // Convert to ZIO
+        .map(logParser.parse) // Parse each log line
+        .map(ZIO.fromOption) // Convert to ZIO
         .flatMap(ZStream.fromZIOOption(_))
-        .tap(parsedLog =>
-          Console.printLine(parsedLog.show)
-        ) // Print each parsed log line
-        .forever // Ensure the stream runs indefinitely
-        .runDrain // Consume the stream (run and ignore the result)
+        .run(logSink)
         .catchAll(err =>
           ZIO.die(err)
         ) // Die with the error if something goes wrong
         .fork // Run the stream in a separate fiber
-      _ <- ZIO.never
+      _ <- fiber.join
     yield ()
