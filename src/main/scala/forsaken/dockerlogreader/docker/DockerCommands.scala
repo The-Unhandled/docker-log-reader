@@ -1,4 +1,4 @@
-package forsaken.dockerlogreader
+package forsaken.dockerlogreader.docker
 
 import zio.process.Command
 
@@ -14,7 +14,7 @@ trait DockerCommands:
     * @return
     */
   def logs(containerId: String): Command =
-    Command("docker", "logs", "--follow", containerId)
+    Command("docker", "logs", "-f", containerId)
 
   /** List all container ids with the given name
     * @param containerName
