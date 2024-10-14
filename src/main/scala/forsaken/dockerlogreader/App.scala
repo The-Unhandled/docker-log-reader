@@ -18,9 +18,9 @@ object App extends ZIOAppDefault with DockerCommands:
       containerId <- ZIO
         .fromOption(containerIds.headOption)
         .orElseFail(new Exception("Container ID not found."))
-      _ <- Console.printLine(s"Getting logs from Container ID: $containerId")
+      _ <- Console.printLine("Getting logs from Container ID: " + containerId)
       logParser = LogParser()
-      _ <- logs(containerId).linesStream
+      fiber <- logs(containerId).linesStream
         .map(logParser.parse)                                 // Parse each log line
         .map(ZIO.fromOption)                                  // Convert to ZIO
         .flatMap(ZStream.fromZIOOption(_))
@@ -32,5 +32,6 @@ object App extends ZIOAppDefault with DockerCommands:
         .catchAll(err =>
           ZIO.die(err)
         ) // Die with the error if something goes wrong
+        .fork // Run the stream in a separate fiber
       _ <- ZIO.never
     yield ()
