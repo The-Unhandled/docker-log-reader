@@ -40,6 +40,7 @@ object App extends ZIOAppDefault with DockerCommands:
       _ <- logs(containerId).stream
         .via(ZPipeline.utf8Decode) // Decode bytes to UTF-8 string
         .mapAccum("") { (acc, chunk) =>
+          println(chunk)
           val combined = acc + chunk
           val lines = combined.split("\n").toList
           val (completeLines, remaining) = lines.splitAt(lines.length - 1)
@@ -47,7 +48,7 @@ object App extends ZIOAppDefault with DockerCommands:
         }
         .mapConcat(identity)
         .foreach(log =>
-          Console.printLine("Got Line: " + log)
+          Console.printLine("Got Line ")
         ) // Print each log line
 
     /*_ <- logs(containerId).linesStream
