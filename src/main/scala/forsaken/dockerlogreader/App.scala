@@ -27,6 +27,8 @@ object App extends ZIOAppDefault with DockerProcesses:
         Console.printLine("Error logged: " + log.level)
       }
 
+    val logParser = LogParser()
+
     // Fetch and print the logs
     for
       containerId <- ZIO
@@ -34,16 +36,8 @@ object App extends ZIOAppDefault with DockerProcesses:
         .orDieWith(_ => new Exception("Container ID not found."))
       _ <- Console.printLine("Getting logs from Container ID: " + containerId)
 
-      logParser = LogParser()
-
       _ <- ZStream
         .fromIterable(logs(containerId).lazyLines)
-        .foreach(log => Console.printLine(s"Got Line $log")) // Print each log line
-
-    /*_ <- logs(containerId).linesStream
-        .tap(log =>
-          Console.printLine("Got Line: " + log)
-        ) // Print each log line
         .map(logParser.parse) // Parse each log line
         .collectSome
         .filter(_.level == ERROR)
@@ -55,5 +49,4 @@ object App extends ZIOAppDefault with DockerProcesses:
           Console.printLine("Stream failed with error: " + err.getMessage) *>
             ZIO.die(err)
         ) // Die with the error if something goes wrong
-     */
     yield ()
