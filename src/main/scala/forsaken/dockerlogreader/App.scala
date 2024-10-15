@@ -37,7 +37,7 @@ object App extends ZIOAppDefault with DockerCommands:
 
       logParser = LogParser()
 
-      logStream = logs(containerId).linesStream
+      _ <- logs(containerId).linesStream
         .tap(log =>
           Console.printLine("Got Line: " + log)
         ) // Print each log line
