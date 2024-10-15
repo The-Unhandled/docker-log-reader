@@ -1,12 +1,18 @@
 package forsaken.dockerlogreader.log
 
-import java.time.LocalDateTime
 import cats.Show
 
-/**
- * @author Petros Siatos
- */
-case class Log (timestamp: LocalDateTime, level: LogLevel, module: String, message: String)
+import java.time.LocalDateTime
+
+/** @author
+  *   Petros Siatos
+  */
+case class Log(
+    timestamp: LocalDateTime,
+    level: LogLevel,
+    module: String,
+    message: String
+)
 
 object Log:
   implicit val showLog: Show[Log] = Show.show { log =>
