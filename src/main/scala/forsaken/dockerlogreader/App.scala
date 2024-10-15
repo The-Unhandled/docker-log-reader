@@ -37,12 +37,20 @@ object App extends ZIOAppDefault with DockerCommands:
 
       logParser = LogParser()
 
-      _ <- logs(containerId).linesStream
+      _ <- logs(containerId).stream
+        .via(ZPipeline.utf8Decode) // Decode bytes to UTF-8 string
+        .mapAccum("") { (acc, chunk) =>
+          val combined = acc + chunk
+          val lines = combined.split("\n").toList
+          val (completeLines, remaining) = lines.splitAt(lines.length - 1)
+          (remaining.headOption.getOrElse(""), completeLines)
+        }
+        .mapConcat(identity)
         .foreach(log =>
           Console.printLine("Got Line: " + log)
         ) // Print each log line
-      
-      /*_ <- logs(containerId).linesStream
+
+    /*_ <- logs(containerId).linesStream
         .tap(log =>
           Console.printLine("Got Line: " + log)
         ) // Print each log line
@@ -57,5 +65,5 @@ object App extends ZIOAppDefault with DockerCommands:
           Console.printLine("Stream failed with error: " + err.getMessage) *>
             ZIO.die(err)
         ) // Die with the error if something goes wrong
-*/
+     */
     yield ()
