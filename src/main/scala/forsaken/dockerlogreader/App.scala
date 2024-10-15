@@ -37,20 +37,32 @@ object App extends ZIOAppDefault with DockerCommands:
 
       logParser = LogParser()
 
-      logStream = logs(containerId).linesStream
-        .tap(log => Console.printLine("Got Line: " + log)) // Print each log line
+      // logStream = logs(containerId).linesStream
+      logStream = logs(containerId).stream
+        .via(
+          ZPipeline.fromChannel(
+            ZPipeline.utf8Decode.channel.mapError(CommandError.IOError.apply)
+          )
+        )
+        .mapAccum("") { (acc, chunk) =>
+          val combined = acc + chunk
+          val lines = combined.split("\n").toList
+          val (completeLines, remaining) = lines.splitAt(lines.length - 1)
+          (remaining.headOption.getOrElse(""), completeLines)
+        }
+        .mapConcat(identity)
+        .tap(log =>
+          Console.printLine("Got Line: " + log)
+        ) // Print each log line
         .map(logParser.parse) // Parse each log line
         .collectSome
-
-      // Filter the logs to only show lines containing "ERROR"
-      _ <- logStream
-          .filter(_.level == ERROR)
-          .foreach{ log =>
-            Sentry.captureException(new Exception(log.message))
-            Console.printLine("Error logged: " + log.level)
-          }
-          .catchAll(err =>
-            Console.printLine("Stream failed with error: " + err.getMessage) *>
-              ZIO.die(err)
-          ) // Die with the error if something goes wrong
+        .filter(_.level == ERROR)
+        .foreach { log =>
+          Sentry.captureException(new Exception(log.message))
+          Console.printLine("Error logged: " + log.level)
+        }
+        .catchAll(err =>
+          Console.printLine("Stream failed with error: " + err.getMessage) *>
+            ZIO.die(err)
+        ) // Die with the error if something goes wrong
     yield ()
