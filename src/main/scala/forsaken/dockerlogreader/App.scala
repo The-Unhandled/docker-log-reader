@@ -37,20 +37,7 @@ object App extends ZIOAppDefault with DockerCommands:
 
       logParser = LogParser()
 
-      // logStream = logs(containerId).linesStream
-      logStream = logs(containerId).stream
-        .via(
-          ZPipeline.fromChannel(
-            ZPipeline.utf8Decode.channel.mapError(CommandError.IOError.apply)
-          )
-        )
-        .mapAccum("") { (acc, chunk) =>
-          val combined = acc + chunk
-          val lines = combined.split("\n").toList
-          val (completeLines, remaining) = lines.splitAt(lines.length - 1)
-          (remaining.headOption.getOrElse(""), completeLines)
-        }
-        .mapConcat(identity)
+      logStream = logs(containerId).linesStream
         .tap(log =>
           Console.printLine("Got Line: " + log)
         ) // Print each log line
