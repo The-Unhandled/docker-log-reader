@@ -38,6 +38,11 @@ object App extends ZIOAppDefault with DockerCommands:
       logParser = LogParser()
 
       _ <- logs(containerId).linesStream
+        .foreach(log =>
+          Console.printLine("Got Line: " + log)
+        ) // Print each log line
+      
+      /*_ <- logs(containerId).linesStream
         .tap(log =>
           Console.printLine("Got Line: " + log)
         ) // Print each log line
@@ -52,4 +57,5 @@ object App extends ZIOAppDefault with DockerCommands:
           Console.printLine("Stream failed with error: " + err.getMessage) *>
             ZIO.die(err)
         ) // Die with the error if something goes wrong
+*/
     yield ()
